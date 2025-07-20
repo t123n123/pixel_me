@@ -22,7 +22,7 @@
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
 
-int FPS    = 60;
+int FPS    = 120;
 int WIDTH  = 800;
 int HEIGHT = 600;
 
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
 
                 if (rect_pos.x < state.image.width * image_scale 
                 && rect_pos.y < state.image.height * image_scale) 
-                    DrawRectangleLinesEx(rect_pos, image_scale / 20, state.current_color);
+                    DrawRectangleLinesEx(rect_pos, max(image_scale / 20, 1), state.current_color);
 
                 if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
                     ImageDrawPixel(&state.image, cell_x, cell_y, state.current_color);
