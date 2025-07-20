@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <argp.h>
+#include <math.h>
 #include "raylib.h"
 #include "raygui.h"
 #include "../styles/jungle/style_jungle.h"
+#include "../styles/genesis/style_genesis.h"
 
-#define WIDTH 800
-#define HEIGHT 600
+int WIDTH =  800;
+int HEIGHT =  600;
 #define START_POS 400, 400
 #define FPS 60
 
@@ -51,16 +53,29 @@ int main(int argc, char** argv) {
 
     bool exit = false;
     bool start = true;
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_BORDERLESS_WINDOWED_MODE);
     InitWindow(WIDTH, HEIGHT, "Pixel ME");
+    SetWindowMinSize(800, 600);
     SetWindowPosition(START_POS);
     SetTargetFPS(FPS);
+    GuiLoadStyleGenesis();
 
-    GuiLoadStyleJungle();
+    Image image_file = LoadImage(fileinfo.filename);
+    Texture2D file_texture = LoadTextureFromImage(image_file);
+    UnloadImage(image_file);
+
 
     while(!exit && !WindowShouldClose() ) {
 
+        if (IsWindowResized()) {
+            WIDTH = GetScreenWidth();
+            HEIGHT = GetScreenHeight();
+        }
+
         BeginDrawing();
         ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+
+        DrawTextureEx(file_texture, (Vector2) { 0 }, 0, fmin(WIDTH / file_texture.width, HEIGHT / file_texture.height), WHITE);
 
         if (start) {
             switch(GuiMessageBox(
