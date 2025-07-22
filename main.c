@@ -13,7 +13,7 @@
 #define START_POS 400, 400
 #define BOX_WIDTH 250
 #define BOX_HEIGHT 250
-#define HIST_SIZE 100
+#define HIST_SIZE 10000
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -217,7 +217,6 @@ int main(int argc, char** argv) {
                     state.current_color = GetImageColor(state.image, cell_x, cell_y);
                 }
                 if (IsKeyPressed(KEY_Z) && IsControlDown()) {
-                    printf("%d\n", state.history[0].old_color);
                     ImageDrawPixel(&state.image, state.history[0].x, state.history[0].y, state.history[0].old_color);
                     memcpy(state.history, state.history + 1, sizeof(Change) * (HIST_SIZE));
                     state.image_changed = true;
