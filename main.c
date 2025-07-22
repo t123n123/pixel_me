@@ -13,6 +13,7 @@
 #define START_POS 400, 400
 #define BOX_WIDTH 250
 #define BOX_HEIGHT 250
+#define HIST_SIZE 100
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -26,29 +27,37 @@ int FPS    = 120;
 int WIDTH  = 800;
 int HEIGHT = 600;
 
-enum EditorMode {
+typedef enum EditorMode {
     EDITOR_MAIN,
     EDITOR_INFO,
     EDITOR_COLOR
-};
+} EditorMode;
 
-void toggle(enum EditorMode * mode, enum EditorMode t) {
+void toggle(EditorMode * mode, EditorMode t) {
     *mode &= t;
     *mode ^= t;
 }
 
+typedef struct Change {
+    Color old_color;
+    int x;
+    int y;
+} Change;
+
 struct {
-    enum EditorMode editor_mode;
+    EditorMode editor_mode;
     Color current_color;
     bool should_exit;
     Image image;
     bool image_changed;
+    Change history[HIST_SIZE + 1];
 } state = {
     .editor_mode = EDITOR_MAIN,
     .current_color = BLACK,
     .should_exit = false,
     .image_changed = false,
 };
+
 
 char info_buffer[200];
 
@@ -57,6 +66,22 @@ Vector2 center_box(int width, int height) {
        .x = WIDTH / 2 - width / 2,
        .y = HEIGHT / 2 - height / 2 
     };
+}
+
+void show_info(Rectangle box_bounds, char * info_message) {
+    switch(GuiMessageBox(
+            box_bounds,
+            "Info",
+            info_message,
+            "Exit;Back"
+    )) {
+        case 1:
+            state.should_exit = true;
+            break;
+        case 2: case 0:
+            toggle(&(state.editor_mode), EDITOR_INFO);
+            break;
+    } 
 }
 
 bool IsControlDown() {
@@ -150,11 +175,13 @@ int main(int argc, char** argv) {
         };
         switch(state.editor_mode) {
             case EDITOR_INFO: {
+                DrawRectangle(0, 0, WIDTH, HEIGHT, (Color) {.a = 0x44, .r = 0xDD, .g = 0xDD, .b = 0xDD});
                 update_info();
                 show_info(box_bounds, info_buffer);
                 break;
             }
             case EDITOR_COLOR: {
+                DrawRectangle(0, 0, WIDTH, HEIGHT, (Color) {.a = 0x44, .r = 0xDD, .g = 0xDD, .b = 0xDD});
                 GuiColorPicker(
                     box_bounds,
                     "Pick color",
@@ -175,33 +202,31 @@ int main(int argc, char** argv) {
                 };
 
                 if (rect_pos.x < state.image.width * image_scale 
-                && rect_pos.y < state.image.height * image_scale) 
+                    && rect_pos.y < state.image.height * image_scale) 
                     DrawRectangleLinesEx(rect_pos, max(image_scale / 20, 1), state.current_color);
 
                 if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                    ImageDrawPixel(&state.image, cell_x, cell_y, state.current_color);
+                    if (!ColorIsEqual(GetImageColor(state.image, cell_x, cell_y), state.current_color)) {
+                        memcpy(state.history + 1, state.history, sizeof(Change) * (HIST_SIZE - 1));
+                        state.history[0] = (Change) {.old_color = GetImageColor(state.image, cell_x, cell_y), .x = cell_x, .y = cell_y };
+                        ImageDrawPixel(&state.image, cell_x, cell_y, state.current_color);
+                        state.image_changed = true;
+                    }
+                } 
+                if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+                    state.current_color = GetImageColor(state.image, cell_x, cell_y);
+                }
+                if (IsKeyPressed(KEY_Z) && IsControlDown()) {
+                    printf("%d\n", state.history[0].old_color);
+                    ImageDrawPixel(&state.image, state.history[0].x, state.history[0].y, state.history[0].old_color);
+                    memcpy(state.history, state.history + 1, sizeof(Change) * (HIST_SIZE));
                     state.image_changed = true;
                 }
+                break;
             }
         }
         EndDrawing();
     }
 
     CloseWindow();
-}
-
-void show_info(Rectangle box_bounds, char * info_message) {
-    switch(GuiMessageBox(
-            box_bounds,
-            "Info",
-            info_message,
-            "Exit;Back"
-    )) {
-        case 1:
-            state.should_exit = true;
-            break;
-        case 2: case 0:
-            toggle(&(state.editor_mode), EDITOR_INFO);
-            break;
-    } 
 }
