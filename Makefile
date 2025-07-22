@@ -1,5 +1,3 @@
-.PHONY: raygui raylib
-
 pixelme: main.c libs/libraygui.a libs/libraylib.a
 	cc main.c -o ./build/pixelme -I./libs/raygui/src/ libs/libraygui.a libs/libraylib.a -lGL -lm -lpthread -ldl -lrt -lX11
 
